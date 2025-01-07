@@ -73,24 +73,30 @@ export default function OneView() {
 
   const handleExport = useCallback(async (payload: exportPengeluaran) => {
     try {
+        const res = await axios.get(endpoints.laporan + `/${payload.startDate}/${payload.endDate}`, {
+            responseType: 'blob',
+            headers: {
+                'Accept': 'application/pdf',
+            },
+        });
 
-      const res = await axios.get(endpoints.laporan + `/${payload.startDate}/${payload.endDate}`);
+        const blob = new Blob([res.data], { type: 'application/pdf' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'laporan_pengeluaran.pdf';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
 
-      const blob = new Blob([res.data], { type: 'application/pdf' });
+        URL.revokeObjectURL(url);
 
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'downloaded_file.pdf';
-      a.click();
-
-      URL.revokeObjectURL(url);
-      onExport.onFalse()
+        onExport.onFalse();
     } catch (error) {
-      console.log(error);
-
+        console.error('Error downloading PDF:', error);
     }
   }, []);
+
 
   const updateAnggaran = useCallback(async (payload: CreateAnggaran) => {
     try {
@@ -154,8 +160,6 @@ export default function OneView() {
     get()
     getAnggaran(false)
   }, [])
-
-  console.log(progress);
 
   const onFill = useBoolean()
   const onAnggaran = useBoolean()
@@ -314,7 +318,7 @@ export default function OneView() {
       />
       <ModalExport
         open={onExport.value}
-        onClose={()=> onExport.onFalse}
+        onClose={()=> onExport.onFalse()}
         edit={false}
         save={handleExport}
       />
